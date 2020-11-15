@@ -16,8 +16,13 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
 
 async fn listen_and_serve() {
     let client = proxy::Client::new();
+    let proxy = warp::any();
+    //.map(warp::reply)
+    //.with(warp::log::custom(telemetry::log_request))
+    //.map(|_| {})
+    //.untuple_one();
 
-    let proxy = warp::any()
+    let proxy = proxy
         .and(proxy::with_client(client))
         .and(warp::method())
         .and(warp::path::full())
@@ -25,10 +30,10 @@ async fn listen_and_serve() {
         .and(warp::header::headers_cloned())
         .and_then(handle);
 
-    let log = proxy.with(warp::log::custom(telemetry::log_request));
+    let proxy = proxy.with(warp::log::custom(telemetry::log_request));
 
     let listen_addr: net::SocketAddr = "0.0.0.0:3000".parse().unwrap();
-    warp::serve(log).run(listen_addr).await;
+    warp::serve(proxy).run(listen_addr).await;
 }
 
 async fn handle(
