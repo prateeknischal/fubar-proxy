@@ -1,5 +1,6 @@
 extern crate reqwest;
 
+use crate::telemetry;
 use reqwest::Url;
 use std::convert::Infallible;
 use warp::{http, hyper::body, path, Filter};
@@ -17,6 +18,7 @@ impl Client {
     }
     pub async fn handle(
         &self,
+        mut ctx: telemetry::Context,
         method: http::Method,
         path: path::FullPath,
         body: body::Bytes,
@@ -39,6 +41,10 @@ impl Client {
             reply = reply.header(hv.0, hv.1);
         }
         let content = res.text().await.unwrap();
+        ctx.tx
+            .send(format!("{} {}", client_path, "localhost"))
+            .await
+            .unwrap();
         reply.body(content).unwrap()
     }
 }
